@@ -8,13 +8,17 @@ type Item = {
     deleted: boolean,
 }
 
+type Version = Record<string, number>
+
 type Doc = {
     content: Item[],
+    version: Version,
 }
 
 function createDoc(): Doc {
     return {
         content: [],
+        version: {}
     }
 }
 
@@ -31,7 +35,8 @@ function getContent(doc: Doc): string {
     return content
 }
 
-function localInsert(doc: Doc, agent: string, seq: number, pos: number, text: string){
+function localInsertOne(doc: Doc, agent: string, pos: number, text: string){
+    const seq = (doc.version[agent] ?? -1) + 1
     integrate(doc,{
         content:text,
         id:[agent, seq],
@@ -39,6 +44,18 @@ function localInsert(doc: Doc, agent: string, seq: number, pos: number, text: st
         originLeft: doc.content[pos - 1]?.id || null,
         originRight: doc.content[pos]?.id || null,
     })
+}
+
+function localInsert(doc: Doc, agent: string, pos: number, text: string){
+    const content = [...text]
+    for(const c of content){
+        localInsertOne(doc, agent, seq, pos, c)
+        pos++
+    }
+} 
+
+function remoteInsert(doc: Doc, item:Item){
+    integrate(doc, item)
 }
 
 const idEq = (a: Id | null, b: Id | null): boolean => {
@@ -59,6 +76,14 @@ function findItemIdxAtId(doc: Doc, id: Id | null): number | null{
 
 function integrate(doc: Doc, newItem: Item) {
     // add newItem into doc at the right localtion
+    const [agent, seq] = newItem.id
+
+    const lastSeen = doc.version[agent] ?? -1
+
+    if(seq != lastSeen + 1) throw Error('Operation out of order')
+
+    doc.version[agent] = seq
+
     let left = findItemIdxAtId(doc, newItem.originLeft) ?? -1
     let destIdx = left + 1
     let right = newItem.originRight ==null ? doc.content.length : findItemIdxAtId(doc, newItem.originRight)
@@ -86,8 +111,8 @@ function integrate(doc: Doc, newItem: Item) {
 
 
 const doc = createDoc()
-localInsert(doc,'seph',0,0,'a')
-localInsert(doc,'seph',1,1,'b')
-localInsert(doc,'seph',2,0,'c')
+localInsertOne(doc,'seph', 0,'a')
+localInsertOne(doc,'seph', 1,'b')
+localInsertOne(doc,'seph', 0,'c')
 console.log('Doc has content : ', getContent(doc))
 console.table(doc.content)
