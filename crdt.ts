@@ -76,14 +76,18 @@ function integrate(doc: Doc, newItem: Item) {
             if(oleft < left || (oleft ===left && oright ===right && newItem.id[0]<other.id[0]))break
             if(oleft === left )scanning = oright <right
             
-            doc.content.splice(destIdx, 0, newItem)
+            
             
         }
     }
+    doc.content.splice(destIdx, 0, newItem)
 }
 
 
 
 const doc = createDoc()
 localInsert(doc,'seph',0,0,'a')
+localInsert(doc,'seph',1,1,'b')
+localInsert(doc,'seph',2,0,'c')
 console.log('Doc has content : ', getContent(doc))
+console.table(doc.content)
