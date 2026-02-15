@@ -1,0 +1,25 @@
+{
+  "name": "crdt",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Dhruvraj1821/CRDT-from-scratch#readme",
+  "bugs": {
+    "url": "https://github.com/Dhruvraj1821/CRDT-from-scratch/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dhruvraj1821/CRDT-from-scratch.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "crdt.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "node crdt.js",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
