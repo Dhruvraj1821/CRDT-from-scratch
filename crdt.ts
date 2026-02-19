@@ -5,7 +5,7 @@ type Item = {
     id: Id,
     originLeft: Id | null,
     originRight: Id | null,
-    deleted: boolean,
+    isDeleted: boolean,
 } 
 
 type Version = Record<string, number>
@@ -28,21 +28,36 @@ function getContent(doc: Doc): string {
     //.join('')
     let content = ''
     for(const item of doc.content){
-        if(!item.deleted){
+    if(!item.isDeleted){
             content += item.content
         }
     }
     return content
 }
 
+const findItemAtPos = (doc: Doc, pos: number, stick_end: boolean = false): number => {
+    let i = 0
+    for(; i <doc.content.length; i++){
+        const item = doc.content[i]
+        if(stick_end && pos ===0) return i
+        else if(item?.isDeleted) continue
+        else if(pos === 0) return i
+        pos--
+    }
+    if(pos === 0) return i
+    else throw Error('Position out of bounds')
+}
+
 function localInsertOne(doc: Doc, agent: string, pos: number, text: string){
+
+    const idx = findItemAtPos(doc, pos, true) 
     const seq = (doc.version[agent] ?? -1) + 1
     integrate(doc,{
         content:text,
         id:[agent, seq],
-        deleted:false,
-        originLeft: doc.content[pos - 1]?.id || null,
-        originRight: doc.content[pos]?.id || null,
+        isDeleted:false,
+        originLeft: doc.content[idx - 1]?.id || null,
+        originRight: doc.content[idx]?.id || null,
     })
 }
 
@@ -59,7 +74,16 @@ function remoteInsert(doc: Doc, item:Item){
     integrate(doc, item)
 }
 
-function localDelete(doc: Doc, )
+
+
+function localDelete(doc: Doc,pos: number, delLen: number){
+    while(delLen > 0){
+        const idx = findItemAtPos(doc, pos, false)
+        doc.content[idx].isDeleted = true
+        delLen--
+
+    }
+}
 
 const idEq = (a: Id | null, b: Id | null): boolean => {
     if(a === null && b === null) return true
@@ -138,6 +162,22 @@ function mergeInto(dest: Doc, src: Doc){
         }
 
         if(mergedOnThisPass === 0) throw Error('Not Making Progress')
+    }
+
+    let srcIdx = 0, destIdx = 0
+    while(srcIdx < src.content.length){
+        const srcItem = src.content[srcIdx]
+        let destItem = src.content[destIdx]
+        while(!idEq(srcItem.id , destItem.id)){
+            destIdx++
+            destItem = dest.content[destIdx]
+        }
+        if(srcItem?.isDeleted){
+            destItem.isDeleted = true
+        }
+
+        srcIdx++
+        destIdx++
     }
 }
 
